@@ -1,38 +1,51 @@
 #!/usr/bin/env python3
-
-# Pull images for an Anki text export into a folder
+''' Pull images for an Anki text export into a folder '''
 
 import argparse
-import re
 import os
+import re
 import shutil
 
 
 def parseArgs():
-  parser = argparse.ArgumentParser(description="Pull images for an Anki text export into a folder. \nExample: \npython path/to/text/filename path/to/export/location")
-  parser.add_argument('filename', help="Name of Anki text export file")
-  parser.add_argument('export_location', help="Name of folder to export images to")
-  parser.add_argument('--img-src-dir', dest='mediaDir', default='~/.local/share/Anki2/User 1/collection.media',
-                      help='Path to directory containing Anki images')
-  return parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="""Pull images for an Anki text export into a folder.
+        Example:
+        python path/to/text/filename path/to/export/location""")
+    parser.add_argument(
+        'filename',
+        help="Name of Anki text export file")
+    parser.add_argument(
+        'export_location',
+        help="Name of folder to export images to")
+    parser.add_argument(
+        '--img-src-dir',
+        dest='mediaDir',
+        default='~/.local/share/Anki2/User 1/collection.media',
+        help='Path to directory containing Anki images')
+    return parser.parse_args()
 
+def strip_img_tag_from_match_group(match_group):
+    ''' Takes a regex match_group and
+    returns the string pointing to the img src '''
+    return match_group[6:-1]
 
 def pullImages(inFile):
-  '''
-  Read in inFile
-  Find all image source strings
-  Return a list of image source strings
-  '''
-  with open(inFile) as f:
-    fileRaw = f.read()
+    '''
+    :inFile: file to read
+    Finds all image source strings
+    :return: a list of image source strings
+    '''
+    with open(inFile) as f:
+        fileRaw = f.read()
 
-  pattern = re.compile('src="".+?"')
-  images = []
+    img_src_pattern = re.compile('src="".+?"')
+    images = []
 
-  for match in re.finditer(pattern, fileRaw):
-    images.append(match.group()[6:-1])
+    for match in re.finditer(img_src_pattern, fileRaw):
+        images.append(strip_img_tag_from_match_group(match.group()))
 
-  return images
+    return images
 
 def storeImages(images, folder, mediaDir):
   '''
@@ -45,7 +58,7 @@ def storeImages(images, folder, mediaDir):
     os.mkdir(folder)
   except OSError as exception:
     # TODO check if folder is empty and continue if it is
-    raise
+    raise exception
 
   # Copy images into directory
   for img in images:
@@ -60,4 +73,3 @@ if __name__ == '__main__':
   args = parseArgs()
   images = pullImages(args.filename)
   storeImages(images, args.export_location, args.mediaDir)
-
