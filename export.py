@@ -6,6 +6,52 @@ import os
 import re
 import shutil
 
+class MediaList(list):
+    ''' Handles and copies media from Anki decks '''
+
+    def __init__(self, media_source, media_destination, exported_deck_file):
+        self.media_source = media_source
+        self.media_destination = media_destination
+        self.exported_deck_file = exported_deck_file
+
+        self._parse_exported_deck_file()
+
+
+    def _parse_exported_deck_file(self):
+        # Finds all image source strings
+        with open(self.exported_deck_file) as f:
+            file_raw = f.read()
+
+        img_src_pattern = re.compile('src="".+?"')
+
+        for match in re.finditer(img_src_pattern, file_raw):
+            self.append(
+                self._strip_img_tag_from_match_group(match.group())
+            )
+
+    def _strip_img_tag_from_match_group(self, match_group):
+        ''' Takes a regex match_group and
+        returns the string pointing to the img src '''
+        return match_group[6:-1]
+
+
+    def copy_media(self):
+
+      # Create directory
+      try:
+        os.mkdir(self.media_destination)
+      except OSError as exception:
+        # TODO check if folder is empty and continue if it is
+        raise exception
+
+      # Copy images into directory
+      for img in self:
+        source_path = os.path.expanduser(os.path.join(self.media_source, img))
+        if os.path.isfile(source_path):
+          shutil.copy(source_path, self.media_destination)
+        else:
+          print("Error: file %s not found." % source_path)
+
 
 def parseArgs():
     parser = argparse.ArgumentParser(
@@ -25,51 +71,9 @@ def parseArgs():
         help='Path to directory containing Anki images')
     return parser.parse_args()
 
-def strip_img_tag_from_match_group(match_group):
-    ''' Takes a regex match_group and
-    returns the string pointing to the img src '''
-    return match_group[6:-1]
-
-def pullImages(inFile):
-    '''
-    :inFile: file to read
-    Finds all image source strings
-    :return: a list of image source strings
-    '''
-    with open(inFile) as f:
-        fileRaw = f.read()
-
-    img_src_pattern = re.compile('src="".+?"')
-    images = []
-
-    for match in re.finditer(img_src_pattern, fileRaw):
-        images.append(strip_img_tag_from_match_group(match.group()))
-
-    return images
-
-def storeImages(images, folder, mediaDir):
-  '''
-  Get each image in the list of images and store it in the specified
-  folder
-  '''
-
-  # Create directory
-  try:
-    os.mkdir(folder)
-  except OSError as exception:
-    # TODO check if folder is empty and continue if it is
-    raise exception
-
-  # Copy images into directory
-  for img in images:
-    fullPath = os.path.expanduser(os.path.join(mediaDir, img))
-    if (os.path.isfile(fullPath)):
-      shutil.copy(fullPath, folder)
-    else:
-      print("Error: file " + fullPath + " not found.")
-
 
 if __name__ == '__main__':
   args = parseArgs()
-  images = pullImages(args.filename)
-  storeImages(images, args.export_location, args.mediaDir)
+
+  ml = MediaList(media_source=args.mediaDir, media_destination=args.export_location, exported_deck_file=args.filename)
+  ml.copy_media()
