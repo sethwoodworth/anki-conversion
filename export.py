@@ -12,8 +12,8 @@ def parseArgs():
   parser = argparse.ArgumentParser(description="Pull images for an Anki text export into a folder. \nExample: \npython path/to/text/filename path/to/export/location")
   parser.add_argument('filename', help="Name of Anki text export file")
   parser.add_argument('export_location', help="Name of folder to export images to")
-  parser.add_argument('--img-src-dir', dest='mediaDir', default='~/.local/share/Anki2/User 1/collection.media', 
-                      help='Path to directory containing Anki images') 
+  parser.add_argument('--img-src-dir', dest='mediaDir', default='~/.local/share/Anki2/User 1/collection.media',
+                      help='Path to directory containing Anki images')
   return parser.parse_args()
 
 
@@ -29,8 +29,8 @@ def pullImages(inFile):
   pattern = re.compile('src="".+?"')
   images = []
 
-  for match in re.finditer(pattern, fileRaw): 
-    images.append(match.group()[6:-1]) 
+  for match in re.finditer(pattern, fileRaw):
+    images.append(match.group()[6:-1])
 
   return images
 
@@ -42,22 +42,22 @@ def storeImages(images, folder, mediaDir):
 
   # Create directory
   try:
-    os.mkdir(folder) 
-  except OSError as exception: 
+    os.mkdir(folder)
+  except OSError as exception:
     # TODO check if folder is empty and continue if it is
     raise
 
   # Copy images into directory
   for img in images:
     fullPath = os.path.expanduser(os.path.join(mediaDir, img))
-    if (os.path.isfile(fullPath)): 
+    if (os.path.isfile(fullPath)):
       shutil.copy(fullPath, folder)
     else:
-      print("Error: file " + fullPath + " not found.") 
+      print("Error: file " + fullPath + " not found.")
 
 
 if __name__ == '__main__':
   args = parseArgs()
-  images = pullImages(args.filename) 
-  storeImages(images, args.export_location, args.mediaDir) 
+  images = pullImages(args.filename)
+  storeImages(images, args.export_location, args.mediaDir)
 
